@@ -1,4 +1,5 @@
 services:
+  # PostgreSQL — доменные таблицы (Задание 1), external_source (Задание 2), logs (Задание 3)
   db:
     image: postgres:16-alpine
     container_name: handmade-market-pg
@@ -10,11 +11,46 @@ services:
       - "5435:5432"
     volumes:
       - handmade_market_pgdata:/var/lib/postgresql/data
+      - ./migrations:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d handmade_market"]
       interval: 2s
       timeout: 3s
       retries: 20
 
+  mongo:
+    image: mongo:7
+    container_name: handmade-market-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - handmade_market_mongodata:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.runCommand({ping: 1})"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  airflow:
+    image: apache/airflow:2.10.3
+    container_name: handmade-market-airflow
+    environment:
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      _PIP_ADDITIONAL_REQUIREMENTS: pymongo psycopg2-binary
+    volumes:
+      - ./dags:/opt/airflow/dags:ro
+      - ./data/csv:/opt/airflow/data/csv:ro
+      - airflow_home:/opt/airflow
+    ports:
+      - "8080:8080"
+    command: bash -c "airflow standalone"
+    depends_on:
+      db:
+        condition: service_healthy
+      mongo:
+        condition: service_healthy
+
 volumes:
   handmade_market_pgdata:
+  handmade_market_mongodata:
+  airflow_home:
