@@ -59,18 +59,18 @@ client_monthly AS (
 ),
 popular_category AS (
    SELECT client_id, reporting_period, product_type,
-         ROW_NUMBER() OVER (PARTITION BY client_id, reporting_period ORDER BY COUNT(*) DESC) as rn
+         ROW_NUMBER() OVER (PARTITION BY client_id, reporting_period ORDER BY COUNT(*) DESC, product_type) as rn
    FROM order_details
    GROUP BY client_id, reporting_period, product_type
 ),
 popular_master AS (
    SELECT client_id, reporting_period, master_id,
-         ROW_NUMBER() OVER (PARTITION BY client_id, reporting_period ORDER BY COUNT(*) DESC) as rn
+         ROW_NUMBER() OVER (PARTITION BY client_id, reporting_period ORDER BY COUNT(*) DESC, master_id) as rn
    FROM order_details
    GROUP BY client_id, reporting_period, master_id
 )
 SELECT
-   ROW_NUMBER() OVER () AS record_id,
+   ROW_NUMBER() OVER (ORDER BY cm.reporting_period, c.client_id) AS record_id,
    c.client_id,
    c.name AS client_name,
    c.address AS client_address,

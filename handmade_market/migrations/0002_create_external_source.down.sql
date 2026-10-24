@@ -1,0 +1,1 @@
+DROP SCHEMA IF EXISTS external_source CASCADE;
