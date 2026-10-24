@@ -1,9 +1,21 @@
-# Хранилище данных магазина изделий ручной работы
+# Аналитика больших данных / Big Data Analysis
+
+Ермаков Тимофей Сергеевич, P4135
+
+Перов Виктор Валерьевич, P4135
+
+## HW 1 - Построение хранилища и витрин данных
+
+Хранилище данных магазина изделий ручной работы
 
 Лабораторная по «Аналитике больших данных»: витрина по заказчикам (Go + PostgreSQL),
 загрузка CSV из внешнего источника в схему `external_source` (Airflow), журнал изменений и синхронизация с MongoDB.
 
-## Стек
+
+### Код 
+[Код - Handmade Market](/handmade_market)
+
+### Стек
 
 | Сервис | Порт | Зачем |
 |---|---|---|
@@ -24,7 +36,7 @@ handmade_market/
 
 CI: `.github/workflows/ci.yml` - на каждый push: `go vet` + `go test` (Postgres как service-контейнер) и `py_compile` DAG-ов.
 
-## Запуск
+### Запуск
 
 ```bash
 cd handmade_market
@@ -50,7 +62,7 @@ http://localhost:8082       # admin / admin (см. .env)
 docker exec handmade-market-airflow cat /opt/airflow/standalone_admin_password.txt
 ```
 
-## Команды
+### Команды
 
 ```bash
 # миграции
@@ -77,13 +89,13 @@ docker compose down
 docker compose down -v
 ```
 
-## Переменные окружения (.env)
+### Переменные окружения (.env)
 
 Креды и порты в `handmade_market/.env` (шаблон - `.env.example`):
 `POSTGRES_USER/PASSWORD/DB/PORT`, `MONGO_PORT`, `MONGO_EXPRESS_PORT/USER/PASSWORD`,
 а также `PG_DSN`, `MONGO_URI`, `MONGO_DB` для задач Airflow.
 
-## Дополнительно
+### Дополнительно
 
 - **Перезапуск airflow** - `docker compose restart airflow`
 - **Порт занят** - `docker-compose.yml` (например `8081:8080`).
