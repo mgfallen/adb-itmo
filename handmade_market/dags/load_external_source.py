@@ -16,7 +16,9 @@ from airflow import DAG
 from airflow.operators.python import PythonOperator
 from airflow.utils.dates import days_ago
 
-PG_DSN = "postgresql://postgres:postgres@db:5432/handmade_market"
+PG_DSN = os.environ.get(
+    "PG_DSN", "postgresql://postgres:postgres@db:5432/handmade_market"
+)
 CSV_DIR = "/opt/airflow/data/csv"
 
 

@@ -8,6 +8,7 @@
 
 Все задачи независимы, поэтому выполняются параллельно.
 """
+import os
 from datetime import datetime
 
 import psycopg2
@@ -17,9 +18,11 @@ from airflow.operators.python import PythonOperator
 from airflow.utils.dates import days_ago
 from pymongo import MongoClient
 
-PG_DSN = "postgresql://postgres:postgres@db:5432/handmade_market"
-MONGO_URI = "mongodb://mongo:27017"
-MONGO_DB = "handmade_market"
+PG_DSN = os.environ.get(
+    "PG_DSN", "postgresql://postgres:postgres@db:5432/handmade_market"
+)
+MONGO_URI = os.environ.get("MONGO_URI", "mongodb://mongo:27017")
+MONGO_DB = os.environ.get("MONGO_DB", "handmade_market")
 
 
 def _pg_conn():
