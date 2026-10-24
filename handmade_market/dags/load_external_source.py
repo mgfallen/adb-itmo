@@ -59,7 +59,7 @@ with DAG(
             filename="user_order_log.csv",
             table="external_source.user_order_log",
             columns=[
-                "uniq_id", "date_time", "city_id", "city_name",
+                "id", "uniq_id", "date_time", "city_id", "city_name",
                 "customer_id", "first_name", "last_name",
                 "item_id", "item_name", "quantity", "payment_amount",
             ],
@@ -72,7 +72,7 @@ with DAG(
             copy_csv_to_pg,
             filename="user_activity_log.csv",
             table="external_source.user_activity_log",
-            columns=["uniq_id", "date_time", "action_id", "customer_id", "quantity"],
+            columns=["id", "uniq_id", "date_time", "action_id", "customer_id", "quantity"],
         ),
     )
 

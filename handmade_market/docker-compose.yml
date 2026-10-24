@@ -11,7 +11,12 @@ services:
       - "5435:5432"
     volumes:
       - handmade_market_pgdata:/var/lib/postgresql/data
-      - ./migrations:/docker-entrypoint-initdb.d:ro
+      # Автоинициализация только up-миграциями: down-файлы из migrations/
+      # в initdb.d не должны выполняться. Откат — через scripts/migrate.sh down.
+      - ./migrations/0001_create_domain_tables.up.sql:/docker-entrypoint-initdb.d/01_domain_tables.sql:ro
+      - ./migrations/0002_create_external_source.up.sql:/docker-entrypoint-initdb.d/02_external_source.sql:ro
+      - ./migrations/0003_create_logs.up.sql:/docker-entrypoint-initdb.d/03_logs.sql:ro
+      - ./migrations/0004_seed_demo_data.up.sql:/docker-entrypoint-initdb.d/04_seed_demo_data.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d handmade_market"]
       interval: 2s
