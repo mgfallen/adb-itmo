@@ -1,0 +1,4 @@
+# Python-зависимости DAG-ов (ставятся в контейнер Airflow при старте,
+# см. _PIP_ADDITIONAL_REQUIREMENTS в docker-compose.yml)
+pymongo>=4.8,<5
+psycopg2-binary>=2.9,<3
