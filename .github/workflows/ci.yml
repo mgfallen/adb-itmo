@@ -1,0 +1,51 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  go-tests:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: handmade_market
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d handmade_market"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: handmade_market/go.mod
+
+      - name: go vet
+        working-directory: handmade_market
+        run: go vet ./...
+
+      - name: unit + integration tests
+        working-directory: handmade_market
+        env:
+          TEST_DATABASE_DSN: postgres://postgres:postgres@localhost:5432/handmade_market?sslmode=disable
+        run: go test -v ./...
+
+  dags-syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: check dags compile
+        run: python -m py_compile handmade_market/dags/*.py
