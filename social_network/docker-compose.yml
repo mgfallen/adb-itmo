@@ -1,0 +1,136 @@
+services:
+  vertica:
+    image: vertica/vertica-ce:12.0.4-0
+    environment:
+      VERTICA_DB_NAME: ${VERTICA_DATABASE}
+    ports:
+      - "${VERTICA_EXTERNAL_PORT}:5433"
+    volumes:
+      - vertica-data:/home/dbadmin/docker
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/vertica/bin/vsql -U dbadmin -c 'SELECT 1' || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+
+  airflow-postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${AIRFLOW_POSTGRES_DB}
+      POSTGRES_USER: ${AIRFLOW_POSTGRES_USER}
+      POSTGRES_PASSWORD: ${AIRFLOW_POSTGRES_PASSWORD}
+    volumes:
+      - airflow-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "${AIRFLOW_POSTGRES_USER}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  airflow-webserver:
+    image: social-airflow:2.10.4
+    build:
+      context: .
+      dockerfile: docker/airflow.Dockerfile
+    depends_on:
+      airflow-postgres:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
+    environment: &airflow-env
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${AIRFLOW_POSTGRES_USER}:${AIRFLOW_POSTGRES_PASSWORD}@${AIRFLOW_POSTGRES_HOST}/${AIRFLOW_POSTGRES_DB}
+      AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "False"
+      AIRFLOW__WEBSERVER__SECRET_KEY: ${AIRFLOW_SECRET_KEY}
+      AIRFLOW__CORE__DEFAULT_TIMEZONE: Europe/Moscow
+      PYTHONPATH: /opt/airflow
+    ports:
+      - "${AIRFLOW_WEBSERVER_PORT}:8080"
+    volumes: &airflow-volumes
+      - ./dags:/opt/airflow/dags
+      - ./src:/opt/airflow/src
+      - ./sql:/opt/airflow/sql
+      - ./config:/opt/airflow/config
+      - ./data:/opt/airflow/data
+    restart: unless-stopped
+
+  airflow-scheduler:
+    image: social-airflow:2.10.4
+    depends_on:
+      airflow-postgres:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
+    environment: *airflow-env
+    volumes: *airflow-volumes
+    restart: unless-stopped
+
+  airflow-init:
+    image: social-airflow:2.10.4
+    depends_on:
+      airflow-postgres:
+        condition: service_healthy
+    environment:
+      <<: *airflow-env
+      _AIRFLOW_DB_MIGRATE: "True"
+      _AIRFLOW_WWW_USER_CREATE: "True"
+      _AIRFLOW_WWW_USER_USERNAME: admin
+      _AIRFLOW_WWW_USER_PASSWORD: admin
+    command: ["version"]
+    volumes: *airflow-volumes
+
+  superset-postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${SUPERSET_POSTGRES_DB}
+      POSTGRES_USER: ${SUPERSET_POSTGRES_USER}
+      POSTGRES_PASSWORD: ${SUPERSET_POSTGRES_PASSWORD}
+    volumes:
+      - superset-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "${SUPERSET_POSTGRES_USER}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  superset:
+    image: social-superset:4.1.1
+    build:
+      context: .
+      dockerfile: docker/superset.Dockerfile
+    depends_on:
+      superset-postgres:
+        condition: service_healthy
+      superset-init:
+        condition: service_completed_successfully
+    environment:
+      SUPERSET_SECRET_KEY: ${SUPERSET_SECRET_KEY}
+      SUPERSET__DATABASE__SQLALCHEMY_DATABASE_URI: postgresql+psycopg2://${SUPERSET_POSTGRES_USER}:${SUPERSET_POSTGRES_PASSWORD}@${SUPERSET_POSTGRES_HOST}/${SUPERSET_POSTGRES_DB}
+    ports:
+      - "${SUPERSET_PORT}:8088"
+    volumes:
+      - superset-home:/app/superset_home
+    restart: unless-stopped
+
+  superset-init:
+    image: social-superset:4.1.1
+    build:
+      context: .
+      dockerfile: docker/superset.Dockerfile
+    depends_on:
+      superset-postgres:
+        condition: service_healthy
+    environment:
+      SUPERSET_SECRET_KEY: ${SUPERSET_SECRET_KEY}
+      SUPERSET__DATABASE__SQLALCHEMY_DATABASE_URI: postgresql+psycopg2://${SUPERSET_POSTGRES_USER}:${SUPERSET_POSTGRES_PASSWORD}@${SUPERSET_POSTGRES_HOST}/${SUPERSET_POSTGRES_DB}
+      SUPERSET_ADMIN_USER: ${SUPERSET_ADMIN_USER}
+      SUPERSET_ADMIN_PASSWORD: ${SUPERSET_ADMIN_PASSWORD}
+      SUPERSET_ADMIN_EMAIL: ${SUPERSET_ADMIN_EMAIL}
+    command: ["bash", "-c", "superset db upgrade && superset fab create-admin --username $$SUPERSET_ADMIN_USER --password $$SUPERSET_ADMIN_PASSWORD --firstname $$SUPERSET_ADMIN_USER --lastname admin --email $$SUPERSET_ADMIN_EMAIL --force && superset init"]
+
+volumes:
+  vertica-data:
+  airflow-postgres-data:
+  superset-postgres-data:
+  superset-home:
