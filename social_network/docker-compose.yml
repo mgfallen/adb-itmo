@@ -117,13 +117,15 @@ services:
         condition: service_healthy
       superset-init:
         condition: service_completed_successfully
-    environment:
+    environment: &superset-env
       SUPERSET_SECRET_KEY: ${SUPERSET_SECRET_KEY}
-      SUPERSET__DATABASE__SQLALCHEMY_DATABASE_URI: postgresql+psycopg2://${SUPERSET_POSTGRES_USER}:${SUPERSET_POSTGRES_PASSWORD}@${SUPERSET_POSTGRES_HOST}/${SUPERSET_POSTGRES_DB}
+      SUPERSET_METADATA_URI: postgresql+psycopg2://${SUPERSET_POSTGRES_USER}:${SUPERSET_POSTGRES_PASSWORD}@${SUPERSET_POSTGRES_HOST}/${SUPERSET_POSTGRES_DB}
+      SUPERSET_CONFIG_PATH: /app/superset_config.py
     ports:
       - "${SUPERSET_PORT}:8088"
     volumes:
       - superset-home:/app/superset_home
+      - ./docker/superset_config.py:/app/superset_config.py:ro
     restart: unless-stopped
 
   superset-init:
@@ -135,8 +137,7 @@ services:
       superset-postgres:
         condition: service_healthy
     environment:
-      SUPERSET_SECRET_KEY: ${SUPERSET_SECRET_KEY}
-      SUPERSET__DATABASE__SQLALCHEMY_DATABASE_URI: postgresql+psycopg2://${SUPERSET_POSTGRES_USER}:${SUPERSET_POSTGRES_PASSWORD}@${SUPERSET_POSTGRES_HOST}/${SUPERSET_POSTGRES_DB}
+      <<: *superset-env
       SUPERSET_ADMIN_USER: ${SUPERSET_ADMIN_USER}
       SUPERSET_ADMIN_PASSWORD: ${SUPERSET_ADMIN_PASSWORD}
       SUPERSET_ADMIN_EMAIL: ${SUPERSET_ADMIN_EMAIL}
