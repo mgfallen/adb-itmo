@@ -1,0 +1,17 @@
+source:
+  encoding: cp1251
+  delimiter: ","
+  timestamp_max_fraction: 6
+  files:
+    people: people.csv
+    groups: groups.csv
+    chats: chats.csv
+  defaults:
+    group_status: active
+    chat_status: delivered
+
+dwh:
+  staging_schema: staging
+  dv_schema: dvs
+  marts_schema: marts
+  sys_marts_schema: sys_marts
