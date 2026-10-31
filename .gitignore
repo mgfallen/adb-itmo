@@ -35,3 +35,6 @@ go.work.sum
 # Cache
 __pycache__/
 *.pyc
+
+# Docs
+*docs/
