@@ -110,21 +110,19 @@ CHARTS = [
     },
 ]
 
-ANALYTICS_LAYOUT = [
-    ("Отправленные и полученные сообщения", 6),
-    ("Динамика сообщений по дням", 6),
-    ("Сообщения по группам", 6),
-    ("Состав групп", 6),
+ANALYTICS_ROWS = [
+    [("Отправленные и полученные сообщения", 6), ("Динамика сообщений по дням", 6)],
+    [("Сообщения по группам", 6), ("Состав групп", 6)],
 ]
 
-ADMIN_LAYOUT = [
-    ("CRON-расписания задач", 12),
-    ("Статусы выполнения задач", 12),
+ADMIN_ROWS = [
+    [("CRON-расписания задач", 12)],
+    [("Статусы выполнения задач", 12)],
 ]
 
 DASHBOARDS = [
-    ("social-analytics", "Аналитика соцсети", ANALYTICS_LAYOUT),
-    ("process-administration", "Администрирование процессов", ADMIN_LAYOUT),
+    ("social-analytics", "Аналитика соцсети", ANALYTICS_ROWS),
+    ("process-administration", "Администрирование процессов", ADMIN_ROWS),
 ]
 
 
@@ -168,10 +166,11 @@ def api(opener, method, path, payload=None, csrf=None):
 
 
 def find_one(opener, path, field, value, csrf):
-    query = urllib.parse.quote(f"(filters:!((col:{field},opr:eq,value:{value})))")
-    _, body = api(opener, "GET", f"{path}?q={query}", csrf=csrf)
-    results = body.get("result", [])
-    return results[0]["id"] if results else None
+    _, body = api(opener, "GET", f"{path}?q=(page_size:100)", csrf=csrf)
+    for item in body.get("result", []):
+        if item.get(field) == value:
+            return item["id"]
+    return None
 
 
 def ensure_dataset(opener, csrf, schema, table, database_id):
@@ -185,18 +184,48 @@ def ensure_dataset(opener, csrf, schema, table, database_id):
     return body["id"]
 
 
+def build_query_context(datasource_id, spec):
+    params = spec["params"]
+    query = {
+        "columns": params.get("columns", []),
+        "metrics": params.get("metrics", []),
+        "groupby": params.get("groupby", []),
+        "orderby": [],
+        "annotation_layers": [],
+        "row_limit": params.get("row_limit", 100),
+        "timeseries_limit": 0,
+        "order_desc": params.get("order_desc", True),
+        "url_params": {},
+        "custom_params": {},
+        "custom_form_data": {},
+    }
+    return {
+        "datasource": {"id": datasource_id, "type": "table"},
+        "queries": [query],
+        "form_data": {"datasource": f"{datasource_id}__table", "viz_type": spec["viz_type"], **params},
+        "result_format": "json",
+        "result_type": "full",
+    }
+
+
 def ensure_chart(opener, csrf, spec, datasets):
     existing = find_one(opener, "/api/v1/chart/", "slice_name", spec["slice_name"], csrf)
-    if existing:
-        return existing
     datasource_id = datasets[spec["datasource"]]
     params = {"datasource": f"{datasource_id}__table", "viz_type": spec["viz_type"], **spec["params"]}
+    query_context = build_query_context(datasource_id, spec)
+    if existing:
+        payload = {"params": json.dumps(params), "query_context": json.dumps(query_context)}
+        status, body = api(opener, "PUT", f"/api/v1/chart/{existing}", payload, csrf=csrf)
+        if status != 200:
+            raise RuntimeError(f"chart {spec['slice_name']} update failed: {status} {body}")
+        return existing
     payload = {
         "slice_name": spec["slice_name"],
         "viz_type": spec["viz_type"],
         "datasource_id": datasource_id,
         "datasource_type": "table",
         "params": json.dumps(params),
+        "query_context": json.dumps(query_context),
     }
     status, body = api(opener, "POST", "/api/v1/chart/", payload, csrf=csrf)
     if status != 201:
@@ -204,29 +233,32 @@ def ensure_chart(opener, csrf, spec, datasets):
     return body["id"]
 
 
-def build_positions(layout, chart_ids):
-    rows = []
+def build_positions(rows, chart_ids):
+    row_ids = []
     positions = {}
-    for index, (name, width) in enumerate(layout, start=1):
+    for index, row in enumerate(rows, start=1):
         row_id = f"ROW-{index}"
-        chart_id = f"CHART-{index}"
-        rows.append(row_id)
+        row_ids.append(row_id)
+        chart_nodes = []
+        for chart_index, (name, width) in enumerate(row, start=1):
+            node_id = f"CHART-{index}-{chart_index}"
+            chart_nodes.append(node_id)
+            positions[node_id] = {
+                "type": "CHART",
+                "id": node_id,
+                "parentId": row_id,
+                "children": [],
+                "meta": {"chartId": chart_ids[name], "width": width, "height": 50, "sliceName": name},
+            }
         positions[row_id] = {
             "type": "ROW",
             "id": row_id,
             "parentId": "GRID_ID",
-            "children": [chart_id],
+            "children": chart_nodes,
             "meta": {"background": "BACKGROUND_TRANSPARENT"},
         }
-        positions[chart_id] = {
-            "type": "CHART",
-            "id": chart_id,
-            "parentId": row_id,
-            "children": [],
-            "meta": {"chartId": chart_ids[name], "width": width, "height": 50, "sliceName": name},
-        }
     positions["ROOT_ID"] = {"type": "ROOT", "id": "ROOT_ID", "children": ["GRID_ID"]}
-    positions["GRID_ID"] = {"type": "GRID", "id": "GRID_ID", "parentId": "ROOT_ID", "children": rows}
+    positions["GRID_ID"] = {"type": "GRID", "id": "GRID_ID", "parentId": "ROOT_ID", "children": row_ids}
     return positions
 
 
@@ -243,7 +275,7 @@ def ensure_dashboard(opener, csrf, slug, title, layout, chart_ids):
         if status != 201:
             raise RuntimeError(f"dashboard {slug} failed: {status} {body}")
         dashboard_id = body["id"]
-    charts = [{"id": chart_ids[name]} for name, _ in layout]
+    charts = [{"id": chart_ids[name]} for row in layout for name, _ in row]
     add_charts = {"dashboard_id": dashboard_id, "charts": charts}
     api(opener, "POST", f"/api/v1/dashboard/{dashboard_id}/charts", add_charts, csrf=csrf)
     positions = build_positions(layout, chart_ids)
@@ -251,8 +283,9 @@ def ensure_dashboard(opener, csrf, slug, title, layout, chart_ids):
     status, body = api(opener, "PUT", f"/api/v1/dashboard/{dashboard_id}", payload, csrf=csrf)
     if status != 200:
         raise RuntimeError(f"dashboard {slug} layout failed: {status} {body}")
-    for name, _ in layout:
-        chart_id = chart_ids[name]
+    for row in layout:
+        for name, _ in row:
+            chart_id = chart_ids[name]
         status, body = api(opener, "PUT", f"/api/v1/chart/{chart_id}", {"dashboards": [dashboard_id]}, csrf=csrf)
         if status != 200:
             raise RuntimeError(f"chart {chart_id} link failed: {status} {body}")
