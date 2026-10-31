@@ -35,6 +35,7 @@ def load_staging(connection, settings: Settings, records: dict[str, list[dict]] 
     counts: dict[str, int] = {}
     with connection.cursor() as cursor:
         for name, (table, fields) in SOURCE_TABLES.items():
+            cursor.execute(f"TRUNCATE TABLE {staging}.{table}")
             reject_table = f"{table}{settings.dwh.reject_suffix}"
             copy_sql = (
                 f"COPY {staging}.{table} ({', '.join(fields)}) "

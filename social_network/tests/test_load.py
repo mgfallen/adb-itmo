@@ -38,6 +38,8 @@ def test_load_staging_copies_csv_and_counts():
     counts = load_staging(connection, settings, records=records)
 
     assert counts == {"people": 4, "groups": 4, "chats": 4}
+    truncates = [sql for sql, _ in connection._cursor.executed if "TRUNCATE TABLE staging" in sql]
+    assert len(truncates) == 3
     assert connection.commits == 1
     assert len(connection._cursor.copied) == 3
     people_sql, people_data = connection._cursor.copied[0]
