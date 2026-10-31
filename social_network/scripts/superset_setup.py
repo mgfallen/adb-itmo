@@ -247,7 +247,15 @@ def ensure_dashboard(opener, csrf, slug, title, layout, chart_ids):
     add_charts = {"dashboard_id": dashboard_id, "charts": charts}
     api(opener, "POST", f"/api/v1/dashboard/{dashboard_id}/charts", add_charts, csrf=csrf)
     positions = build_positions(layout, chart_ids)
-    api(opener, "PUT", f"/api/v1/dashboard/{dashboard_id}", {"positions": positions}, csrf=csrf)
+    payload = {"position_json": json.dumps(positions)}
+    status, body = api(opener, "PUT", f"/api/v1/dashboard/{dashboard_id}", payload, csrf=csrf)
+    if status != 200:
+        raise RuntimeError(f"dashboard {slug} layout failed: {status} {body}")
+    for name, _ in layout:
+        chart_id = chart_ids[name]
+        status, body = api(opener, "PUT", f"/api/v1/chart/{chart_id}", {"dashboards": [dashboard_id]}, csrf=csrf)
+        if status != 200:
+            raise RuntimeError(f"chart {chart_id} link failed: {status} {body}")
     return dashboard_id
 
 
