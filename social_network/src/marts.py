@@ -76,7 +76,7 @@ def _build_queries(marts: str, dv: str) -> list[str]:
         """,
         f"""
         INSERT INTO {marts}.dm_message_stats
-        SELECT CAST(chat.msg_time AS DATE),
+        SELECT CAST(m.msg_time AS DATE),
                COUNT(*) AS messages_total,
                COUNT(CASE WHEN groups.hk_msg_id IS NOT NULL THEN 1 END) AS group_messages,
                COUNT(CASE WHEN groups.hk_msg_id IS NULL THEN 1 END) AS private_messages,
@@ -85,7 +85,7 @@ def _build_queries(marts: str, dv: str) -> list[str]:
         FROM {dv}.h_chats m
         JOIN {dv}.s_chat_info chat ON chat.hk_msg_id = m.hk_msg_id
         LEFT JOIN {dv}.l_groups groups ON groups.hk_msg_id = m.hk_msg_id
-        GROUP BY CAST(chat.msg_time AS DATE)
+        GROUP BY CAST(m.msg_time AS DATE)
         """,
     ]
 
