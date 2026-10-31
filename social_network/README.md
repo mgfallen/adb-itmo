@@ -1,6 +1,6 @@
 # social_network — хранилище Data Vault на Vertica
 
-Лабораторная работа 2 (АБД, ИТМО): Data Vault 2.0 в Vertica + Airflow + Apache Superset.
+Лабораторная работа 2: Data Vault 2.0 в Vertica + Airflow + Apache Superset.
 
 ## Структура
 
