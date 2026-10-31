@@ -57,6 +57,9 @@ services:
 
   airflow-scheduler:
     image: social-airflow:2.10.4
+    build:
+      context: .
+      dockerfile: docker/airflow.Dockerfile
     depends_on:
       airflow-postgres:
         condition: service_healthy
@@ -68,6 +71,9 @@ services:
 
   airflow-init:
     image: social-airflow:2.10.4
+    build:
+      context: .
+      dockerfile: docker/airflow.Dockerfile
     depends_on:
       airflow-postgres:
         condition: service_healthy
