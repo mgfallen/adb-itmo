@@ -1,12 +1,12 @@
 services:
   vertica:
-    image: vertica/vertica-ce:12.0.4-0
+    image: molo17/vertica-ce:24.1.0-0
     environment:
       VERTICA_DB_NAME: ${VERTICA_DATABASE}
     ports:
       - "${VERTICA_EXTERNAL_PORT}:5433"
     volumes:
-      - vertica-data:/home/dbadmin/docker
+      - vertica-data:/data
     healthcheck:
       test: ["CMD-SHELL", "/opt/vertica/bin/vsql -U dbadmin -c 'SELECT 1' || exit 1"]
       interval: 15s
