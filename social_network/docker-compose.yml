@@ -133,7 +133,7 @@ services:
       SUPERSET_ADMIN_USER: ${SUPERSET_ADMIN_USER}
       SUPERSET_ADMIN_PASSWORD: ${SUPERSET_ADMIN_PASSWORD}
       SUPERSET_ADMIN_EMAIL: ${SUPERSET_ADMIN_EMAIL}
-    command: ["bash", "-c", "superset db upgrade && superset fab create-admin --username $$SUPERSET_ADMIN_USER --password $$SUPERSET_ADMIN_PASSWORD --firstname $$SUPERSET_ADMIN_USER --lastname admin --email $$SUPERSET_ADMIN_EMAIL --force && superset init"]
+    command: ["bash", "-c", "superset db upgrade && superset fab create-admin --username $$SUPERSET_ADMIN_USER --password $$SUPERSET_ADMIN_PASSWORD --firstname $$SUPERSET_ADMIN_USER --lastname admin --email $$SUPERSET_ADMIN_EMAIL && superset init"]
 
 volumes:
   vertica-data:
