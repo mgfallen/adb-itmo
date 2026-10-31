@@ -49,3 +49,41 @@ jobs:
 
       - name: check dags compile
         run: python -m py_compile handmade_market/dags/*.py
+
+  social-network-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: install dependencies
+        working-directory: social_network
+        run: pip install -r requirements-dev.txt
+
+      - name: ruff check
+        working-directory: social_network
+        run: ruff check .
+
+      - name: check dags compile
+        working-directory: social_network
+        run: python -m py_compile dags/*.py
+
+  social-network-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: install dependencies
+        working-directory: social_network
+        run: pip install -r requirements-dev.txt
+
+      - name: pytest
+        working-directory: social_network
+        run: pytest -q
