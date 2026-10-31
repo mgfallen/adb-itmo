@@ -83,7 +83,7 @@ def build_task_run_rows(run_rows: list[tuple]) -> list[dict]:
 def _save_rows(connection, table: str, columns: tuple[str, ...], rows: list[dict]) -> None:
     if not rows:
         return
-    placeholders = ", ".join(f"%({column})s" for column in columns)
+    placeholders = ", ".join(f":{column}" for column in columns)
     insert_sql = f"INSERT INTO {table} ({', '.join(columns)}) VALUES ({placeholders})"
     with connection.cursor() as cursor:
         cursor.execute(f"TRUNCATE TABLE {table}")
