@@ -17,3 +17,7 @@ dwh:
   marts_schema: marts
   sys_marts_schema: sys_marts
   reject_suffix: _rej
+
+schedules:
+  build_marts: "0 4 * * *"
+  sys_marts_refresh: "30 4 * * *"

@@ -40,9 +40,16 @@ class DwhConfig:
 
 
 @dataclass(frozen=True)
+class SchedulesConfig:
+    build_marts: str
+    sys_marts_refresh: str
+
+
+@dataclass(frozen=True)
 class Settings:
     source: SourceConfig
     dwh: DwhConfig
+    schedules: SchedulesConfig
 
 
 def load_env_local() -> None:
@@ -74,7 +81,11 @@ def load_settings() -> Settings:
         sys_marts_schema=raw["dwh"]["sys_marts_schema"],
         reject_suffix=raw["dwh"]["reject_suffix"],
     )
-    return Settings(source=source, dwh=dwh)
+    schedules = SchedulesConfig(
+        build_marts=raw["schedules"]["build_marts"],
+        sys_marts_refresh=raw["schedules"]["sys_marts_refresh"],
+    )
+    return Settings(source=source, dwh=dwh, schedules=schedules)
 
 
 @dataclass(frozen=True)
