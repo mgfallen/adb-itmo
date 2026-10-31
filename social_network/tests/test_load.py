@@ -91,7 +91,7 @@ def test_load_satellites_uses_defaults_and_hash_diff():
     group_sql, group_params = connection._cursor.executed[1]
     chat_sql, chat_params = connection._cursor.executed[2]
     assert "INSERT INTO dvs.s_person_info" in person_sql
-    assert "hash_diff NOT IN" in person_sql
+    assert "NOT EXISTS" in person_sql
     assert "INSERT INTO dvs.s_group_info" in group_sql
     assert "INSERT INTO dvs.s_chat_info" in chat_sql
     assert person_params["load_date"] == LOAD_DATE

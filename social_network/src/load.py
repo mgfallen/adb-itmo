@@ -175,8 +175,9 @@ def load_satellites(connection, settings: Settings, load_date: datetime) -> None
         SELECT hk_person_id, name, date_of_birthday, country, phone, e_mail, hash_diff,
                '{SOURCE_PEOPLE}', CAST(:load_date AS TIMESTAMP)
         FROM attrs a
-        WHERE hash_diff NOT IN (
-            SELECT hash_diff FROM {dv}.s_person_info x WHERE x.hk_person_id = a.hk_person_id
+        WHERE NOT EXISTS (
+            SELECT 1 FROM {dv}.s_person_info x
+            WHERE x.hk_person_id = a.hk_person_id AND x.hash_diff = a.hash_diff
         )
         """,
         f"""
@@ -189,8 +190,9 @@ def load_satellites(connection, settings: Settings, load_date: datetime) -> None
         )
         SELECT hk_group_id, title, status, hash_diff, '{SOURCE_GROUPS}', CAST(:load_date AS TIMESTAMP)
         FROM attrs a
-        WHERE hash_diff NOT IN (
-            SELECT hash_diff FROM {dv}.s_group_info x WHERE x.hk_group_id = a.hk_group_id
+        WHERE NOT EXISTS (
+            SELECT 1 FROM {dv}.s_group_info x
+            WHERE x.hk_group_id = a.hk_group_id AND x.hash_diff = a.hash_diff
         )
         """,
         f"""
@@ -203,8 +205,9 @@ def load_satellites(connection, settings: Settings, load_date: datetime) -> None
         )
         SELECT hk_msg_id, text_msg, status, hash_diff, '{SOURCE_CHATS}', CAST(:load_date AS TIMESTAMP)
         FROM attrs a
-        WHERE hash_diff NOT IN (
-            SELECT hash_diff FROM {dv}.s_chat_info x WHERE x.hk_msg_id = a.hk_msg_id
+        WHERE NOT EXISTS (
+            SELECT 1 FROM {dv}.s_chat_info x
+            WHERE x.hk_msg_id = a.hk_msg_id AND x.hash_diff = a.hash_diff
         )
         """,
     ]
