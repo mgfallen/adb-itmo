@@ -2,14 +2,11 @@ from datetime import datetime, timedelta
 
 from airflow import DAG
 from airflow.operators.python import PythonOperator
-from sqlalchemy import text
 
 from src.config import load_settings
 from src.db import connect
 from src.sys_marts import build_schedule_rows, build_task_run_rows, save_schedule_rows, save_task_run_rows
 
-SCHEDULE_QUERY = "SELECT dag_id, schedule_interval FROM dag"
-TASK_QUERY = "SELECT dag_id, task_id FROM task"
 TASK_RUN_QUERY = """
     SELECT dag_id, task_id, run_id, state, start_date, end_date, try_number
     FROM task_instance
@@ -23,19 +20,22 @@ DEFAULT_ARGS = {
 
 
 def extract_airflow_metadata():
-    from airflow.settings import Session
+    from airflow import settings
+    from airflow.configuration import conf
+    from airflow.models import DagBag
+    from sqlalchemy import text
 
-    session = Session()
+    bag = DagBag(dag_folder=conf.get("core", "dags_folder"), include_examples=False)
+    task_schedules = [
+        (dag_id, task.task_id, dag.schedule_interval)
+        for dag_id, dag in bag.dags.items()
+        for task in dag.tasks
+    ]
+    session = settings.Session()
     try:
-        schedules = session.execute(text(SCHEDULE_QUERY)).all()
-        tasks = session.execute(text(TASK_QUERY)).all()
         task_runs = session.execute(text(TASK_RUN_QUERY)).all()
     finally:
         session.close()
-    schedule_by_dag = {dag_id: schedule for dag_id, schedule in schedules}
-    task_schedules = [
-        (dag_id, task_id, schedule_by_dag.get(dag_id)) for dag_id, task_id in tasks
-    ]
     return task_schedules, task_runs
 
 
