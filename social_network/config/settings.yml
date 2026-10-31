@@ -9,9 +9,11 @@ source:
   defaults:
     group_status: active
     chat_status: delivered
+  reject_max: 100
 
 dwh:
   staging_schema: staging
   dv_schema: dvs
   marts_schema: marts
   sys_marts_schema: sys_marts
+  reject_suffix: _rej

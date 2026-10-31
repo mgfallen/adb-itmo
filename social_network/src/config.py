@@ -27,6 +27,7 @@ class SourceConfig:
     chats_file: Path
     group_status: str
     chat_status: str
+    reject_max: int
 
 
 @dataclass(frozen=True)
@@ -35,6 +36,7 @@ class DwhConfig:
     dv_schema: str
     marts_schema: str
     sys_marts_schema: str
+    reject_suffix: str
 
 
 @dataclass(frozen=True)
@@ -63,12 +65,14 @@ def load_settings() -> Settings:
         chats_file=PROJECT_ROOT / "data" / "csv" / files["chats"],
         group_status=defaults["group_status"],
         chat_status=defaults["chat_status"],
+        reject_max=raw["source"]["reject_max"],
     )
     dwh = DwhConfig(
         staging_schema=raw["dwh"]["staging_schema"],
         dv_schema=raw["dwh"]["dv_schema"],
         marts_schema=raw["dwh"]["marts_schema"],
         sys_marts_schema=raw["dwh"]["sys_marts_schema"],
+        reject_suffix=raw["dwh"]["reject_suffix"],
     )
     return Settings(source=source, dwh=dwh)
 
