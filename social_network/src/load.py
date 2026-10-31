@@ -57,7 +57,7 @@ def load_hubs(connection, settings: Settings, load_date: datetime) -> None:
         INSERT INTO {dv}.h_people (hk_person_id, person_id, registration_date, source, load_date)
         SELECT MD5(CAST(person_id AS VARCHAR)), person_id, MAX(registration_date), MIN(source), :load_date
         FROM (
-            SELECT p.id AS person_id, p.registration_date, '{SOURCE_PEOPLE}' AS source FROM {staging}.st_people p
+            SELECT p.id AS person_id, p.registration_date, NULL, '{SOURCE_PEOPLE}' AS source FROM {staging}.st_people p
             UNION ALL
             SELECT g.owner_id, NULL, NULL, '{SOURCE_GROUPS}' FROM {staging}.st_groups g
             UNION ALL
